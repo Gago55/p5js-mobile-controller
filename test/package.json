@@ -1,0 +1,12 @@
+{
+  "name": "microcontroller-monitor",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "monitor": "node monitor.js"
+  },
+  "dependencies": {
+    "picocolors": "^1.1.1",
+    "socket.io-client": "^4.7.5"
+  }
+}

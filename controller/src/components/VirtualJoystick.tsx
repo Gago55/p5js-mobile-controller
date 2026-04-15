@@ -25,7 +25,7 @@ export default function VirtualJoystick({
     (values: { x: number; y: number }) => emit({ type: "JOYSTICK", id, values }),
     [emit, id]
   );
-  const throttledEmit = useThrottle(handleEmit, 30);
+  const throttledEmit = useThrottle(handleEmit, 150);
 
   /** Move knob DOM node directly — no re-render needed */
   function moveKnob(dx: number, dy: number) {

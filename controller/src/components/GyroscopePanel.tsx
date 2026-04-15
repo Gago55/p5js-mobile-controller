@@ -30,7 +30,7 @@ function barPercent(value: number, range = 180): number {
 export default function GyroscopePanel({ emit }: Props) {
   const [gyro, setGyro]         = useState<GyroValues>({ alpha: 0, beta: 0, gamma: 0 });
   const [supported, setSupported] = useState(true);
-  const [enabled, setEnabled]   = useState(true);
+  const [enabled, setEnabled]   = useState(false);
   const [rateMs, setRateMs]     = useState(150); // default ~30fps
   const enabledRef              = useRef(enabled);
 

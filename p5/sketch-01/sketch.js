@@ -69,7 +69,7 @@ function draw() {
 
   // ── Read controller state ─────────────────────────────────────────────────
   const joy    = bridge.joystick("joystick-left");  // { x, y } -1..1
-  const spd    = bridge.slider("slider-main");       // 0..1
+  const spd    = bridge.slider("slider-1");       // 0..1
   const g      = bridge.gyro();                      // { alpha, beta, gamma }
   const btnA   = bridge.button("btn-a");
 

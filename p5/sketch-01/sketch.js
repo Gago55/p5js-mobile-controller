@@ -2,18 +2,20 @@
  * sketch-01 — Controller Demo
  * ─────────────────────────────────────────────────────────────────────────────
  * Controls:
- *   Joystick  → move the ball
- *   Slider    → ball size (0.5× … 2.5×)
- *   Gyro γ    → hue shift of the trail colour
+ *   Joystick  → move the ball (direct velocity)
+ *   Gyro      → also moves the ball (tilt phone to steer) — adds to joystick
+ *   Slider    → ball size (0.5× … 2.5×) + overall speed multiplier
  *   Button A  → burst of particles
  *   Button B  → toggle trail on/off
  */
 
 // ── Editable constants ────────────────────────────────────────────────────────
-const ROOM_ID      = "111"; // ← change to match your controller
-const SPEED        = 5;          // base pixels per frame at full joystick
-const BASE_RADIUS  = 28;
-const TRAIL_LENGTH = 60;         // frames to keep trail
+const ROOM_ID        = "111"; // ← change to match your controller
+const SPEED          = 5;     // base pixels per frame at full joystick deflection
+const GYRO_SPEED     = 2;     // max pixels per frame at full phone tilt (lower = less sensitive)
+const GYRO_DEADZONE  = 5;     // degrees of tilt to ignore (avoids drift at rest)
+const BASE_RADIUS    = 28;
+const TRAIL_LENGTH   = 60;
 const PARTICLE_COUNT = 18;
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -73,28 +75,40 @@ function draw() {
 
   // Derived values
   const radius = BASE_RADIUS * (0.5 + spd * 2);    // 0.5× … 2.5× base
-  const hue    = (map(g.gamma ?? 0, -90, 90, 0, 360) + frameCount) % 360;
+  const hue    = (frameCount * 0.4) % 360;          // slow auto-cycling hue
   const speed  = SPEED * (0.4 + spd * 1.6);         // faster with slider
 
-  // ── Physics ───────────────────────────────────────────────────────────────
-  vel.x = joy.x * speed;
-  vel.y = -joy.y * speed; // canvas Y is flipped
+  // ── Gyro → velocity (gamma = left/right tilt, beta = forward/back tilt) ──
+  const rawGx = g.gamma ?? 0;  // -90 … 90  (tilt left/right)
+  const rawGy = g.beta  ?? 0;  // -90 … 90  (tilt forward/back, clamped)
+
+  // Apply deadzone so the ball stays still when phone is roughly flat
+  const gx = abs(rawGx) > GYRO_DEADZONE ? rawGx : 0;
+  const gy = abs(rawGy) > GYRO_DEADZONE ? rawGy : 0;
+
+  // Map tilt angle to -1..1, then scale by GYRO_SPEED
+  const gyroVx =  map(constrain(gx, -45, 45), -45, 45, -1, 1) * GYRO_SPEED;
+  const gyroVy =  map(constrain(gy, -45, 45), -45, 45, -1, 1) * GYRO_SPEED;
+
+  // ── Physics — joystick + gyro are additive ────────────────────────────────
+  vel.x = joy.x * speed + gyroVx;
+  vel.y = -joy.y * speed + gyroVy; // canvas Y is inverted vs joystick
   pos.add(vel);
 
   // Soft wrap at edges
   pos.x = ((pos.x % width)  + width)  % width;
   pos.y = ((pos.y % height) + height) % height;
 
-  // ── Trail ─────────────────────────────────────────────────────────────────
-  if (showTrail && (joy.x !== 0 || joy.y !== 0)) {
+  // ── Trail — records whenever the ball actually moves (joystick OR gyro) ──
+  const isMoving = vel.magSq() > 0.05;
+  if (showTrail && isMoving) {
     trail.push({ x: pos.x, y: pos.y, hue, r: radius });
     if (trail.length > TRAIL_LENGTH) trail.shift();
   }
 
   for (let i = 0; i < trail.length; i++) {
-    const t   = i / trail.length;          // 0 (oldest) … 1 (newest)
-    const pt  = trail[i];
-    const age = 1 - t;
+    const t  = i / trail.length; // 0 (oldest) … 1 (newest)
+    const pt = trail[i];
     fill(pt.hue, 80, 90, t * 60);
     circle(pt.x, pt.y, pt.r * t * 1.2);
   }
@@ -109,6 +123,20 @@ function draw() {
     fill(p.hue, 90, 100, map(p.life, 0, p.maxLife, 0, 90));
     circle(p.x, p.y, p.r * (p.life / p.maxLife));
     if (p.life <= 0) particles.splice(i, 1);
+  }
+
+  // ── Gyro tilt indicator (top-right corner) ───────────────────────────────
+  {
+    const cx = width - 48, cy = 48, r = 30;
+    // outer ring
+    noFill(); stroke(255, 15); strokeWeight(1);
+    circle(cx, cy, r * 2);
+    // dot showing tilt direction
+    const tx = map(constrain(gx, -45, 45), -45, 45, -r, r);
+    const ty = map(constrain(gy, -45, 45), -45, 45, -r, r);
+    noStroke(); fill(hue, 70, 100, 70);
+    circle(cx + tx, cy + ty, 10);
+    noStroke();
   }
 
   // ── Ball ──────────────────────────────────────────────────────────────────
@@ -133,8 +161,7 @@ function draw() {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function spawnBurst() {
-  const g   = bridge.gyro();
-  const hue = map(g.gamma ?? 0, -90, 90, 0, 360);
+  const hue = (frameCount * 0.4) % 360;
   for (let i = 0; i < PARTICLE_COUNT; i++) {
     const angle = random(TWO_PI);
     const speed = random(2, 9);

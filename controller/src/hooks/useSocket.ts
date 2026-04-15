@@ -12,21 +12,23 @@ export interface ControllerEvent {
 export type ConnectionStatus = "disconnected" | "connecting" | "connected" | "error";
 
 /**
- * Resolve the server URL at runtime so that phones on the LAN automatically
- * reach the right machine instead of pointing at their own localhost.
+ * Resolve the socket server URL.
  *
- * Priority:
- *  1. VITE_SOCKET_URL env var (if explicitly set to something other than localhost)
- *  2. Same hostname that served this page + port 3001
+ * When served over HTTPS (required for Android gyro), browsers block
+ * mixed-content connections to plain HTTP/WS. The Vite dev server proxies
+ * /socket.io/* → localhost:3001, so we connect to the same origin (no port 3001).
+ *
+ * On plain HTTP desktop dev, we fall back to localhost:3001 directly.
  */
 function resolveServerUrl(): string {
-  const envUrl = import.meta.env.VITE_SOCKET_URL as string | undefined;
-  if (envUrl && !envUrl.includes("localhost") && !envUrl.includes("127.0.0.1")) {
-    return envUrl;
+  const { protocol, hostname, port } = window.location;
+  if (protocol === "https:") {
+    // Use the same HTTPS origin — Vite proxy forwards /socket.io/* to the bridge
+    return `${protocol}//${hostname}${port ? `:${port}` : ""}`;
   }
-  // Use the same host the browser used to reach Vite — works on any device on the LAN
-  const { protocol, hostname } = window.location;
-  return `${protocol}//${hostname}:3001`;
+  // Plain HTTP (desktop only) — connect directly to the bridge server port
+  const envUrl = import.meta.env.VITE_SOCKET_URL as string | undefined;
+  return envUrl ?? `http://${hostname}:3001`;
 }
 
 const SOCKET_URL = resolveServerUrl();

@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 
 interface Props {
   onConnect: (roomId: string) => void;
+  serverUrl: string;
 }
 
 async function requestGyroPermission(): Promise<boolean> {
@@ -24,7 +25,7 @@ async function requestGyroPermission(): Promise<boolean> {
   return true;
 }
 
-export default function ConnectionOverlay({ onConnect }: Props) {
+export default function ConnectionOverlay({ onConnect, serverUrl }: Props) {
   const [roomId, setRoomId] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -60,6 +61,7 @@ export default function ConnectionOverlay({ onConnect }: Props) {
         </div>
         <h1 className="text-2xl font-bold tracking-tight text-white">Controller</h1>
         <p className="text-sm text-gray-400">Enter the Room ID to connect</p>
+        <p className="text-xs font-mono text-gray-600 mt-1">{serverUrl}</p>
       </motion.div>
 
       {/* Input card */}

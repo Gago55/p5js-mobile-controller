@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sketch 01 — Controller Demo</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { background: #0a0a0f; overflow: hidden; }
+      canvas { display: block; }
+
+      /* HUD overlay */
+      #hud {
+        position: fixed;
+        top: 12px;
+        left: 12px;
+        font: 12px/1.6 monospace;
+        color: rgba(255,255,255,0.35);
+        pointer-events: none;
+        white-space: pre;
+      }
+      #hud .dot {
+        display: inline-block;
+        width: 8px; height: 8px;
+        border-radius: 50%;
+        background: #ef4444;
+        margin-right: 6px;
+        vertical-align: middle;
+      }
+      #hud.live .dot { background: #4ade80; }
+    </style>
+  </head>
+  <body>
+    <div id="hud"><span class="dot"></span>waiting for controller…</div>
+
+    <!-- 1. Socket.io client -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <!-- 2. Reusable bridge (exposes window.bridge) -->
+    <script src="../socket-bridge.js"></script>
+    <!-- 3. p5.js -->
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.11.3/lib/p5.min.js"></script>
+    <!-- 4. The sketch -->
+    <script src="sketch.js"></script>
+  </body>
+</html>

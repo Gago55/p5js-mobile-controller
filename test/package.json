@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "monitor": "node monitor.js"
+    "monitor": "node monitor.js 111"
   },
   "dependencies": {
     "picocolors": "^1.1.1",

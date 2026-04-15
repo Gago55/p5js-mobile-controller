@@ -1,0 +1,8 @@
+{
+    "scripts": {
+        "server": "cd server && npm run start",
+        "controller": "cd controller && npm run dev",
+        "test": "cd test && npm run monitor", 
+        "start": "npm run server & npm run controller & npm run test"
+    }
+}

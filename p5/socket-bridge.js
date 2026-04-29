@@ -3,8 +3,8 @@
  * ─────────────────────────────────────────────────────────────────────────────
  * Reusable Socket.io bridge for p5.js sketches.
  *
- * HOW TO USE IN ANY SKETCH
- * ─────────────────────────
+ * SINGLE ROOM (most sketches)
+ * ────────────────────────────
  * 1. Add to index.html (after socket.io, before sketch.js):
  *      <script src="../socket-bridge.js"></script>
  *
@@ -19,7 +19,16 @@
  *
  * 4. Or subscribe to live events (runs once per event, not every frame):
  *      bridge.on('BUTTON', e => { if (e.id === 'btn-a' && e.values) jump(); });
- *      bridge.on('joystick-left', e => { ... });  // listen by control id
+ *
+ * TWO ROOMS (e.g. 2-player Pong — each player on a different room)
+ * ──────────────────────────────────────────────────────────────────
+ *      const p1 = createBridge().connect('room-p1');
+ *      const p2 = createBridge().connect('room-p2');
+ *
+ *      // In draw():
+ *      const tilt1 = p1.pongTilt();   // 'forward' | 'still' | 'backward'
+ *      const tilt2 = p2.pongTilt();
+ *      const up1   = p1.button('btn-up');
  *
  * ─────────────────────────────────────────────────────────────────────────────
  * The server URL is auto-derived from window.location so it works on any
@@ -35,7 +44,9 @@
     return `${protocol}//${hostname}:3001`;
   })();
 
-  // ── Bridge object (exposed as window.bridge) ──────────────────────────────
+  // ── Factory — creates an independent bridge instance ─────────────────────
+  function createBridge() {
+
   const bridge = {
     /** Latest value per control id: { [id]: { type, id, values } } */
     state: {},
@@ -163,12 +174,22 @@
     },
 
     /**
-     * Current gyroscope reading.
+     * Current gyroscope reading (standard mode).
      * @returns {{ alpha: number, beta: number, gamma: number }}
      */
     gyro() {
       const s = this.state["phone-gyro"];
       return s ? s.values : { alpha: 0, beta: 0, gamma: 0 };
+    },
+
+    /**
+     * Pong tilt state — the classified beta from a Pong-mode controller.
+     * Only changes when the phone crosses the tilt threshold, so no spam.
+     * @returns {'forward' | 'still' | 'backward'}
+     */
+    pongTilt() {
+      const s = this.state["pong-gyro"];
+      return s ? s.values.state : "still";
     },
 
     // ── Internal ─────────────────────────────────────────────────────────────
@@ -179,5 +200,12 @@
     },
   };
 
-  global.bridge = bridge;
+  return bridge;
+  } // end createBridge
+
+  // ── Globals ───────────────────────────────────────────────────────────────
+  // window.bridge       → default single-room instance (backwards compatible)
+  // window.createBridge → factory for multi-room sketches
+  global.createBridge = createBridge;
+  global.bridge = createBridge();
 })(window);

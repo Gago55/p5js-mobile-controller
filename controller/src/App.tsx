@@ -1,8 +1,9 @@
 import { useState, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useSocket, type ConnectionStatus } from "./hooks/useSocket";
-import ConnectionOverlay from "./components/ConnectionOverlay";
+import ConnectionOverlay, { type AppMode } from "./components/ConnectionOverlay";
 import Panel, { type ControlItem, MAX_BUTTONS, MAX_SLIDERS, MAX_JOYSTICKS } from "./components/Panel";
+import PongController from "./components/PongController";
 
 // ── Default control lists ─────────────────────────────────────────────────────
 
@@ -59,8 +60,19 @@ function SplitIcon({ active }: { active: boolean }) {
 
 export default function App() {
   const [roomId, setRoomId]       = useState<string | null>(null);
+  const [mode, setMode]           = useState<AppMode>("standard");
   const [splitMode, setSplitMode] = useState(false);
   const { emit, status, serverUrl } = useSocket(roomId);
+
+  function handleConnect(id: string, m: AppMode) {
+    setMode(m);
+    setRoomId(id);
+  }
+
+  function handleLeave() {
+    setRoomId(null);
+    setSplitMode(false);
+  }
 
   // ── Dynamic control lists ────────────────────────────────────────────────
   const [buttons,   setButtons]   = useState<ControlItem[]>(DEFAULT_BUTTONS);
@@ -129,7 +141,7 @@ export default function App() {
             exit={{ opacity: 0, scale: 0.97 }}
             transition={{ duration: 0.25 }}
           >
-            <ConnectionOverlay onConnect={setRoomId} serverUrl={serverUrl} />
+            <ConnectionOverlay onConnect={handleConnect} serverUrl={serverUrl} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -153,22 +165,31 @@ export default function App() {
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Split-screen toggle */}
-              <button
-                onClick={() => setSplitMode((v) => !v)}
-                className={`
-                  flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs transition-colors
-                  ${splitMode
-                    ? "bg-indigo-700/60 text-indigo-300"
-                    : "bg-gray-800 text-gray-500 hover:text-gray-300"}
-                `}
-              >
-                <SplitIcon active={splitMode} />
-                <span>Split</span>
-              </button>
+              {/* Split toggle — only in standard mode */}
+              {mode === "standard" && (
+                <button
+                  onClick={() => setSplitMode((v) => !v)}
+                  className={`
+                    flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs transition-colors
+                    ${splitMode
+                      ? "bg-indigo-700/60 text-indigo-300"
+                      : "bg-gray-800 text-gray-500 hover:text-gray-300"}
+                  `}
+                >
+                  <SplitIcon active={splitMode} />
+                  <span>Split</span>
+                </button>
+              )}
+
+              {/* Mode badge */}
+              {mode === "pong" && (
+                <span className="rounded-lg px-2.5 py-1.5 text-xs bg-amber-900/40 text-amber-400 font-semibold tracking-wide">
+                  PONG
+                </span>
+              )}
 
               <button
-                onClick={() => setRoomId(null)}
+                onClick={handleLeave}
                 className="rounded-lg px-2.5 py-1.5 text-xs text-gray-600 hover:text-gray-300 transition-colors"
               >
                 Leave
@@ -176,8 +197,12 @@ export default function App() {
             </div>
           </header>
 
-          {/* Panel area */}
-          {splitMode ? (
+          {/* ── Panel area — branches on mode ─────────────────────────────── */}
+          {mode === "pong" ? (
+            <div className="flex-1 min-h-0">
+              <PongController emit={emit} />
+            </div>
+          ) : splitMode ? (
             <div className="flex flex-col flex-1 min-h-0">
               <div className="flex-1 min-h-0 border-b border-gray-800">
                 <Panel {...panelProps} defaultTab="gyro" compact />

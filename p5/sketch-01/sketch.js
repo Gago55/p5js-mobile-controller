@@ -10,19 +10,19 @@
  */
 
 // ── Editable constants ────────────────────────────────────────────────────────
-const ROOM_ID        = "111"; // ← change to match your controller
-const SPEED          = 5;     // base pixels per frame at full joystick deflection
-const GYRO_SPEED     = 2;     // max pixels per frame at full phone tilt (lower = less sensitive)
-const GYRO_DEADZONE  = 5;     // degrees of tilt to ignore (avoids drift at rest)
-const BASE_RADIUS    = 28;
-const TRAIL_LENGTH   = 60;
+const ROOM_ID = "111"; // ← change to match your controller
+const SPEED = 5;     // base pixels per frame at full joystick deflection
+const GYRO_SPEED = 20;     // max pixels per frame at full phone tilt (lower = less sensitive)
+const GYRO_DEADZONE = 5;     // degrees of tilt to ignore (avoids drift at rest)
+const BASE_RADIUS = 28;
+const TRAIL_LENGTH = 60;
 const PARTICLE_COUNT = 18;
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let pos, vel;
-let trail       = [];
-let particles   = [];
-let showTrail   = true;
+let trail = [];
+let particles = [];
+let showTrail = true;
 let hud;
 
 function setup() {
@@ -68,27 +68,27 @@ function draw() {
   background(240, 20, 5, showTrail ? 18 : 100);
 
   // ── Read controller state ─────────────────────────────────────────────────
-  const joy    = bridge.joystick("joystick-left");  // { x, y } -1..1
-  const spd    = bridge.slider("slider-1");       // 0..1
-  const g      = bridge.gyro();                      // { alpha, beta, gamma }
-  const btnA   = bridge.button("btn-a");
+  const joy = bridge.joystick("joystick-left");  // { x, y } -1..1
+  const spd = bridge.slider("slider-1");       // 0..1
+  const g = bridge.gyro();                      // { alpha, beta, gamma }
+  const btnA = bridge.button("btn-a");
 
   // Derived values
   const radius = BASE_RADIUS * (0.5 + spd * 2);    // 0.5× … 2.5× base
-  const hue    = (frameCount * 0.4) % 360;          // slow auto-cycling hue
-  const speed  = SPEED * (0.4 + spd * 1.6);         // faster with slider
+  const hue = (frameCount * 0.4) % 360;          // slow auto-cycling hue
+  const speed = SPEED * (0.4 + spd * 1.6);         // faster with slider
 
   // ── Gyro → velocity (gamma = left/right tilt, beta = forward/back tilt) ──
   const rawGx = g.gamma ?? 0;  // -90 … 90  (tilt left/right)
-  const rawGy = g.beta  ?? 0;  // -90 … 90  (tilt forward/back, clamped)
+  const rawGy = g.beta ?? 0;  // -90 … 90  (tilt forward/back, clamped)
 
   // Apply deadzone so the ball stays still when phone is roughly flat
   const gx = abs(rawGx) > GYRO_DEADZONE ? rawGx : 0;
   const gy = abs(rawGy) > GYRO_DEADZONE ? rawGy : 0;
 
   // Map tilt angle to -1..1, then scale by GYRO_SPEED
-  const gyroVx =  map(constrain(gx, -45, 45), -45, 45, -1, 1) * GYRO_SPEED;
-  const gyroVy =  map(constrain(gy, -45, 45), -45, 45, -1, 1) * GYRO_SPEED;
+  const gyroVx = map(constrain(gx, -45, 45), -45, 45, -1, 1) * GYRO_SPEED;
+  const gyroVy = map(constrain(gy, -45, 45), -45, 45, -1, 1) * GYRO_SPEED;
 
   // ── Physics — joystick + gyro are additive ────────────────────────────────
   vel.x = joy.x * speed + gyroVx;
@@ -96,7 +96,7 @@ function draw() {
   pos.add(vel);
 
   // Soft wrap at edges
-  pos.x = ((pos.x % width)  + width)  % width;
+  pos.x = ((pos.x % width) + width) % width;
   pos.y = ((pos.y % height) + height) % height;
 
   // ── Trail — records whenever the ball actually moves (joystick OR gyro) ──
@@ -107,7 +107,7 @@ function draw() {
   }
 
   for (let i = 0; i < trail.length; i++) {
-    const t  = i / trail.length; // 0 (oldest) … 1 (newest)
+    const t = i / trail.length; // 0 (oldest) … 1 (newest)
     const pt = trail[i];
     fill(pt.hue, 80, 90, t * 60);
     circle(pt.x, pt.y, pt.r * t * 1.2);
@@ -116,8 +116,8 @@ function draw() {
   // ── Particles ─────────────────────────────────────────────────────────────
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
-    p.x  += p.vx;
-    p.y  += p.vy;
+    p.x += p.vx;
+    p.y += p.vy;
     p.vy += 0.12; // gravity
     p.life--;
     fill(p.hue, 90, 100, map(p.life, 0, p.maxLife, 0, 90));

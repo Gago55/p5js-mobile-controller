@@ -15,8 +15,8 @@ export type TiltState = "forward" | "still" | "backward";
 const THRESHOLD = 10;
 
 function classifyBeta(beta: number): TiltState {
-  if (beta >  THRESHOLD) return "forward";
-  if (beta < -THRESHOLD) return "backward";
+  if (beta >  THRESHOLD) return "backward";
+  if (beta < -THRESHOLD) return "forward";
   return "still";
 }
 
